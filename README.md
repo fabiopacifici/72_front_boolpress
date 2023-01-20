@@ -200,6 +200,197 @@ Use router-link in your navigation. Edit the AppNav component (or whatever you c
 Note: replaced the anchor tag `a` with with the `router-link` component and use these syntax
 `:to="{ name: 'home' }"` to point to a route.
 
-## How to add single-posts
+## Add a single post
 
-continue
+To add the single post page, you can add a route with a paramenter using the following syntax
+
+```js
+ {
+      path: '/blog/:slug',
+      name: 'single-post',
+      component: SinglePostView
+    },
+```
+
+Note: the path value uses :slug as the paramenter to recover the single post.
+Note2: remember to import the SinglePostView component at the top.
+
+### Add a SinglePostView component
+
+```js
+<script>
+import axios from 'axios'
+
+export default {
+  name: 'SinglePostView',
+ 
+  data() {
+    return {
+     
+    }
+  },
+  mounted() {
+    //API call will go here;    
+  }
+}
+</script>
+
+<template>
+  
+  <div class="single-post" >
+    {{$route.params.slug}}
+  
+   {/* Your post data here */}
+  </div>
+</template>
+
+
+<style lang="scss" scoped>
+
+</style>
+
+```
+
+The special $route property gives us access to the params property and inside we can find our slug paramenter that
+we can render onto the page.
+
+## Edit the laravel App
+
+Add to the laravel app a route to handle API calls for the single post
+
+```php
+
+Route::get('/posts/{post:slug}', [PostController::class, 'show']);
+
+```
+
+Implement the show method in the API/PostController
+
+```php
+ public function show($slug)
+    {
+        /* Show the single post as json */
+        $post = Post::with('category', 'tags', 'user')->where('slug', $slug)->first();
+        //dd($post);
+        if ($post) {
+            return response()->json([
+                'success' => true,
+                'results' => $post
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'results' => 'Post Not Found'
+            ]);
+        }
+    }
+
+```
+
+The if checks if the post returns an instance of the Post model, if not NULL is returned and we can show
+the appropriate json response.
+
+## VUE APP
+
+Back to our vue app, now we can edit the singlePostView and add an ajax call to the newly created endpoint
+
+```js
+data() {
+    return {
+      post: null,
+      loading: true,
+      api_base_url: 'http://localhost:8001'
+    }
+  },
+  mounted() {
+    //console.log(this.$route.params.slug);
+    const url = this.api_base_url + '/api/posts/' + this.$route.params.slug
+    console.log(url);
+    axios.get(url)
+      .then(response => {
+        if (response.data.success) {
+          this.post = response.data.results
+          this.loading = false
+        } else {
+          /* TODO: handle the not found post  
+          404 
+          */
+          // https://router.vuejs.org/guide/essentials/navigation.html#navigate-to-a-different-location
+        }
+        console.log(response);
+      }).catch(error => {
+        console.log(error)
+      })
+
+  }
+```
+
+## Add 404 Page
+
+If the user enters an url that does NOT exist we need to show a 404 page
+first create a route
+
+```js
+ {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: NotFoundView
+    },
+
+```
+
+then create the view component
+
+```js
+<script>
+
+export default {
+  name: 'NotFoundView',
+
+
+}
+</script>
+
+<template>
+
+  <div class="container">
+    <p class="lead">
+      😨 Ops, Page not found!
+    </p>
+    <router-link to="/">Go to Homepage</router-link>
+
+  </div>
+
+</template>
+
+
+<style lang="scss" scoped>
+
+</style>
+
+```
+
+now if all worked you shoud be able to see the 404 page when visiting an url like `/sopdijfgspdioajf`
+but still see the SinglePostView when typing `/blog/skdfpaos` where `skdfpaos` should be the slug of a post that does not exist.
+
+Handle that issue in the else block in the SinglePostView
+
+```js
+axios.get(url)
+      .then(response => {
+        if (response.data.success) {
+          this.post = response.data.results
+          this.loading = false
+        } else {
+          /* TODO: handle the not found post  
+          404 
+          */
+          // https://router.vuejs.org/guide/essentials/navigation.html#navigate-to-a-different-location
+        }
+        console.log(response);
+      }).catch(error => {
+        console.log(error)
+      })
+
+
+```
