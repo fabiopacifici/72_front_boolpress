@@ -1,16 +1,18 @@
 <script>
 import axios from 'axios';
-
+import { state } from '../state.js'
+import PostCard from './PostCard.vue';
 export default {
   name: 'AppMain',
+  components: {
+    PostCard
+  },
   data() {
     return {
+      state,
       posts: null,
-      base_api_url: 'http://localhost:8001',
       loading: true,
       error: null,
-      max: 100
-
     }
   },
   methods: {
@@ -29,23 +31,6 @@ export default {
           this.loading = false
         })
     },
-    getImagePath(path) {
-      console.log(path);
-      if (path) {
-        return this.base_api_url + '/storage/' + path
-      }
-      return '/img/placeholder_600.png'
-    },
-    /**
-     * 
-     * @param {string} text the post body
-     */
-    trimBody(text) {
-      if (text.length > this.max) {
-        return text.slice(0, this.max) + '...'
-      }
-      return text
-    },
     prevPage(url) {
       console.log(url)
       this.getPosts(url)
@@ -57,7 +42,7 @@ export default {
 
   },
   mounted() {
-    this.getPosts(this.base_api_url + '/api/posts');
+    this.getPosts(this.state.api_base_url + '/api/posts');
   }
 
 }
@@ -69,39 +54,7 @@ export default {
     <div class="container">
       <template v-if="posts && !loading">
         <div class="row row-cols-1 row-cols-sm-3 g-4">
-          <div class="col" v-for="post in posts.data">
-            <div class="card border-0 shadow-sm rounded-0 rounded-bottom">
-              <img class="card-image rounded-top" :src="getImagePath(post.cover_image)" alt="">
-              <div class="card-body">
-                <h4>{{ post.title }}</h4>
-                <p>
-                  {{ trimBody(post.body) }}
-                </p>
-                <router-link :to="{ name: 'single-post', params: { slug: post.slug } }">Read more</router-link>
-              </div>
-              <div class="card-footer text-muted">
-                <div class="category">
-                  <strong>Category: </strong>
-                  <span v-if="post.category">
-                    {{ post.category.name }}
-                  </span>
-                  <span v-else>Uncategorized</span>
-                </div>
-                <div class="tags">
-                  <strong>Tags: </strong>
-                  <template v-if="post.tags.lenght > 0">
-                    <span v-for="tag in post.tags">
-                      #{{ tag.name }}
-                    </span>
-                  </template>
-                  <template v-else>
-                    <span>No tags.</span>
-                  </template>
-                </div>
-              </div>
-
-            </div>
-          </div>
+          <PostCard :post="post" v-for="post in posts.data" />
         </div>
 
         <nav aria-label="Page navigation" class="d-flex justify-content-center pt-5">
